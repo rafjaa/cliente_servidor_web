@@ -63,7 +63,7 @@ if __name__ == '__main__':
     RECURSO = dados_consulta['recurso']
 
     # Formata o cabeçalho
-    header = 'GET {0} HTTP/1.1\nHost: {1}\n\n'.format(RECURSO, HOST).encode()
+    header = 'GET {0} HTTP/1.1\nHost: {1}\nUser-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/49.0.2623.87 Safari/537.36\n\n'.format(RECURSO, HOST).encode()
 
     # Instancia o socket TCP IPv4
     s = socket.socket(
@@ -71,12 +71,44 @@ if __name__ == '__main__':
         socket.SOCK_STREAM
     )
 
-    s.connect((HOST, PORT))
+    # Conecta-se ao servidor
+    s.connect((HOST, PORT))    
+
+    # Envia a requisição
+    s.send(header)
+
+    dados = ''
 
     try:
-        s.send(header)
+        while True:
+            s.settimeout(1)
+            resp = s.recv(2048)
+            print(resp)
 
-        print(s.recv(1024))
+            dados += resp.decode()            
 
+            if not len(resp):
+                break
+    except:
+        # Timeout
+        pass
     finally:
         s.close()
+
+    # Separa o cabeçalho da resposta HTTP dos dados
+    sep = '\r\n\r\n'
+    cabecalho = dados.split(sep)[0]
+    conteudo = sep.join(dados.split(sep)[1:])
+
+    # Descobre o tipo do conteúdo
+    content_type = False
+    for l in cabecalho.splitlines():
+        if 'Content-Type' in l:
+            content_type = l.split(':')[1].replace(' ', '').split(';')[0]
+
+    print()
+    print(content_type)
+
+    # Salva o conteúdo
+    with open('pagina.html', 'w') as f:
+        f.write(conteudo)
