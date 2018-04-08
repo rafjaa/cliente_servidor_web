@@ -1,3 +1,4 @@
+import mimetypes
 import socket
 import sys
 
@@ -83,32 +84,42 @@ if __name__ == '__main__':
         while True:
             s.settimeout(1)
             resp = s.recv(2048)
-            print(resp)
-
-            dados += resp.decode()            
 
             if not len(resp):
                 break
+
+            dados += resp.decode()            
     except:
         # Timeout
         pass
     finally:
         s.close()
 
+
     # Separa o cabeçalho da resposta HTTP dos dados
     sep = '\r\n\r\n'
     cabecalho = dados.split(sep)[0]
-    conteudo = sep.join(dados.split(sep)[1:])
+    conteudo = '\n'.join(dados.split(sep)[1:])
 
-    # Descobre o tipo do conteúdo
+    # Obtém o código HTTP de resposta e descobre o tipo do conteúdo
     content_type = False
+    codigo_resposta = False
+    texto_codigo_resposta = False
+
     for l in cabecalho.splitlines():
+        if not codigo_resposta:
+            partes_cod_resposta = l.strip().split(' ')
+            codigo_resposta = partes_cod_resposta[1]
+            texto_codigo_resposta = ' '.join(partes_cod_resposta[2:])
+
         if 'Content-Type' in l:
             content_type = l.split(':')[1].replace(' ', '').split(';')[0]
 
+    extensao_arquivo = mimetypes.guess_extension(content_type)
+
     print()
-    print(content_type)
+    print(codigo_resposta, texto_codigo_resposta, mimetypes.guess_extension(content_type))
 
     # Salva o conteúdo
-    with open('pagina.html', 'w') as f:
+    with open('download' + extensao_arquivo, 'w') as f:
         f.write(conteudo)
