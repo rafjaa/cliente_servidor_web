@@ -98,6 +98,9 @@ if __name__ == '__main__':
 
     # Separa o cabeçalho da resposta HTTP dos dados
     sep = '\r\n\r\n'
+    if sep not in dados:
+        sep = '\n\n'
+
     cabecalho = dados.split(sep)[0]
     conteudo = '\n'.join(dados.split(sep)[1:])
 
@@ -115,10 +118,13 @@ if __name__ == '__main__':
         if 'Content-Type' in l:
             content_type = l.split(':')[1].replace(' ', '').split(';')[0]
 
-    extensao_arquivo = mimetypes.guess_extension(content_type)
+    try:
+        extensao_arquivo = mimetypes.guess_extension(content_type)
+    except:
+        extensao_arquivo = '.html'
 
     print()
-    print(codigo_resposta, texto_codigo_resposta, mimetypes.guess_extension(content_type))
+    print(codigo_resposta, texto_codigo_resposta, extensao_arquivo)
 
     # Salva o conteúdo
     with open('download' + extensao_arquivo, 'w') as f:
