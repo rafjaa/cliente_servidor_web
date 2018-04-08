@@ -22,16 +22,34 @@ ip_servidor = 'localhost'
 if USAR_IP_EXTERNO:
     ip_servidor = obtem_ip_externo()
 
-print(obtem_ip_externo())
-
 
 def processa_requisicao(con):
-    requisicao = con.recv(1024)
+    requisicao = con.recv(2048).decode()
 
-    print(requisicao)
+    # Processa os campos da requisição HTTP
+    inicio_requisicao = False
+    campos_requisicao = {}
 
+    for l in requisicao.split('\n'):
+        if not inicio_requisicao:
+            inicio_requisicao = l
+            continue
+
+        campo = l.strip('\r').split(':')[0]
+        valor = ':'.join(l.strip('\r').split(':')[1:]).strip()
+
+        campos_requisicao[campo] = valor
+
+    print(campos_requisicao)
+
+    metodo_http, recurso, versao_http = inicio_requisicao.split(' ')
+    print(metodo_http, recurso, versao_http)
+
+
+    # Envia a resposta para o cliente
     con.send('HTTP/1.1 200 OK\n\n<h1>It works!</h1>'.encode())
 
+    # Fecha a conexão
     con.close()
 
 
@@ -65,7 +83,11 @@ if __name__ == '__main__':
     # sem necessitar de aguardar um tempo de espera
     s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
-    s.bind((ip_servidor, porta))
+    try:
+        s.bind((ip_servidor, porta))
+    except PermissionError:
+        print('Você não possui permissão para utilizar essa porta.')
+        sys.exit()
 
     while True:
         s.listen(1)
