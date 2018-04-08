@@ -1,6 +1,7 @@
 import os
 import socket
 import sys
+from threading import Thread
 
 # Caso False, escuta em localhost
 USAR_IP_EXTERNO = False
@@ -21,8 +22,19 @@ ip_servidor = 'localhost'
 if USAR_IP_EXTERNO:
     ip_servidor = obtem_ip_externo()
 
-
 print(obtem_ip_externo())
+
+
+def processa_requisicao(con):
+    requisicao = con.recv(1024)
+
+    print(requisicao)
+
+    con.send('HTTP/1.1 200 OK\n\n<h1>It works!</h1>'.encode())
+
+    con.close()
+
+
 
 if __name__ == '__main__':
 
@@ -54,17 +66,15 @@ if __name__ == '__main__':
     s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
     s.bind((ip_servidor, porta))
-    s.listen(1)
 
-    print('Aguardando conexão em', ip_servidor, porta)
+    while True:
+        s.listen(1)
 
-    con, info_cliente = s.accept()
+        print('Aguardando conexão em', ip_servidor, porta)
 
-    print('conexão efetuada por', info_cliente)
+        con, info_cliente = s.accept()
 
-    requisicao = con.recv(1024)
+        print('conexão efetuada por', info_cliente)
 
-    print(requisicao)
-
-    con.send('HTTP/1.1 200 OK\n\n<h1>It works!</h1>'.encode())
-
+        # Processa a requisição em uma thread paralela
+        Thread(target=processa_requisicao, args=(con, )).start()
