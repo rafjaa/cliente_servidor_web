@@ -116,10 +116,9 @@ def processa_requisicao(con):
             pass
 
     # Fecha a conexão
+    con.close()    
     s.close()
-    con.close()
     
-
 
 
 if __name__ == '__main__':
