@@ -27,21 +27,81 @@ HTML_LISTAGEM = '''
                     font-family: sans-serif;
                 }}
 
+                body{{
+                    background-color: #eceef1;
+                }}
+
+                main{{
+                    display: block;
+                    margin: 15px;
+                    padding: 50px 100px;
+                    background-color: #fff;
+                    height: calc(100vh - 150px);
+                }}
+
+                h1{{
+                    margin-bottom: 50px;
+                }}
+
+                a, span{{
+                    display: inline-block;
+                }}
+
+                a{{
+                    width: 30%;
+                    padding-left: 15px;
+                }}
+
+                a{{
+                    font-weight: bold
+                }}
+
                 .tam_bytes{{
-                    padding: 15px 50px;
+                    width: 15%;
+                    padding: 20px 50px;
+                    text-align: center;
                 }}
 
                 .mod_date{{
-                    padding: 15px 50px;
+                    width: 30%;
+                    padding: 20px 50px;
+                    text-align: center;
+                }}
+
+                .item_listagem{{
+                    border-bottom: solid 1px #eee;
+                }}
+
+                .titulo_listagem{{
+                    font-weight: bold;
+                    text-transform: uppercase;
+                    font-size: 13px;
+                }}
+
+                .t{{
+                    text-align: left;
+                    width: 30%;
+                    padding-left: 15px;
+                }}
+
+                .voltar{{
+                    font-size: 20px;
                 }}
             </style>
         </head>
         <body>
-            <h1>{0}</h1>
-            <p>
-                {2}
-            </p>
-            {1}
+            <main>
+                <h1>{0}</h1>
+                <p class="voltar">
+                    {2}
+                </p>
+                <div class="titulo_listagem">
+                    <span class="t">Nome</span>
+                    <span class="tam_bytes">Tamanho (bytes)</span>
+                    <span class="mod_date">Última modificação</span>
+                </div>
+                {1}
+            </main>
         </body>
     </html>
 '''
@@ -53,16 +113,38 @@ HTML_NOT_FOUND = '''
             <meta charset="utf-8">
             <title>404 Not Found</title>
             <style type="text/css">
-                *{{
+                *{
                     margin: 0;
                     padding: 0;
                     font-family: sans-serif;
-                }}
+                }
+
+                body{
+                    background-color: #eceef1;
+                }
+
+                main{
+                    display: block;
+                    margin: 15px;
+                    padding: 50px 100px;
+                    background-color: #fff;
+                    height: calc(100vh - 150px);
+                }
+
+                h1{
+                    margin-bottom: 50px;
+                }
+
+                a{
+                    font-weight: bold;
+                }
             </style>
         </head>
         <body>
-            <h1>Recurso não encontrado (404 Not Found)</h1>
-            <p>Clique <a href="/">aqui</a> para acessar a listagem de arquivos da raiz</p>
+            <main>
+                <h1>Recurso não encontrado (404 Not Found)</h1>
+                <p>Clique <a href="/">aqui</a> para acessar a listagem de arquivos da raiz.</p>
+            </main>
         </body>
     </html>
 '''
@@ -119,8 +201,6 @@ def processa_requisicao(con):
     # Evita o uso de .. para voltar diretórios
     recurso = recurso.replace('..', ' ').replace('//', '/')
 
-    # 400 Bad Request
-    # 500 Internal Server Error
     codigo_resposta = '200'
     txt_resposta = 'OK'
     conteudo_resposta = '<h1>It works!</h1>'
