@@ -2,6 +2,9 @@ import mimetypes
 import socket
 import sys
 
+TIMEOUT_CONEXAO = 10
+TIMEOUT_LEITURA = 1
+
 def formata_consulta(url):
     dados_consulta = {
         'ip': '',
@@ -52,8 +55,6 @@ if __name__ == '__main__':
         if not dados_consulta:
             print('Forneça um endereço válido.')
             sys.exit()
-        else:
-            print(dados_consulta)
     except:
         print('Modo de uso: python3 navegador.py endereco_site')
         sys.exit()
@@ -63,6 +64,11 @@ if __name__ == '__main__':
     PORT = dados_consulta['porta']
     RECURSO = dados_consulta['recurso']
 
+    print('\nCONSULTA\n--------')
+    print('URL:', URL)
+    print('IP:', HOST)
+    print('PORTA:', PORT)
+
     # Formata o cabeçalho
     header = 'GET {0} HTTP/1.1\nHost: {1}\nUser-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/49.0.2623.87 Safari/537.36\n\n'.format(RECURSO, HOST).encode()
 
@@ -71,24 +77,29 @@ if __name__ == '__main__':
         socket.AF_INET,
         socket.SOCK_STREAM
     )
+    try:
+        s.settimeout(TIMEOUT_CONEXAO)
 
-    # Conecta-se ao servidor
-    s.connect((HOST, PORT))    
+        # Conecta-se ao servidor
+        s.connect((HOST, PORT)) 
+    except socket.timeout:
+        print('\nTIMEOUT: o servidor não respondeu a requisição\n')
+        sys.exit()
 
     # Envia a requisição
     s.send(header)
 
-    dados = ''
+    dados = b''
 
     try:
         while True:
-            s.settimeout(1)
+            s.settimeout(TIMEOUT_LEITURA)
             resp = s.recv(2048)
 
             if not len(resp):
                 break
 
-            dados += resp.decode()            
+            dados += resp
     except:
         # Timeout
         pass
@@ -97,17 +108,19 @@ if __name__ == '__main__':
 
 
     # Separa o cabeçalho da resposta HTTP dos dados
-    sep = '\r\n\r\n'
+    sep = b'\r\n\r\n'
     if sep not in dados:
-        sep = '\n\n'
+        sep = b'\n\n'
 
-    cabecalho = dados.split(sep)[0]
-    conteudo = '\n'.join(dados.split(sep)[1:])
+    cabecalho = dados.split(sep)[0].decode()
+    conteudo = dados[len(cabecalho) + len(sep):]   
+
 
     # Obtém o código HTTP de resposta e descobre o tipo do conteúdo
     content_type = False
     codigo_resposta = False
     texto_codigo_resposta = False
+
 
     for l in cabecalho.splitlines():
         if not codigo_resposta:
@@ -123,9 +136,24 @@ if __name__ == '__main__':
     except:
         extensao_arquivo = '.html'
 
-    print()
-    print(codigo_resposta, texto_codigo_resposta, extensao_arquivo)
+
+    print('\nRESPOSTA\n--------')
+    print('CÓDIGO:', codigo_resposta, '({0})'.format(texto_codigo_resposta))
+
+    if codigo_resposta != '200':
+        print()
+        sys.exit()
+
+    print('CONTENT-TYPE:', content_type, '({0})'.format(extensao_arquivo))    
+
+    if RECURSO != '/':
+        nome_arquivo = RECURSO.split('/')[-1].split('.')[0]
+    else:
+        nome_arquivo = URL.lstrip('http://').split('/')[0]
 
     # Salva o conteúdo
-    with open('download' + extensao_arquivo, 'w') as f:
+    with open(nome_arquivo + extensao_arquivo, 'wb') as f:
         f.write(conteudo)
+
+    print('ARQUIVO SALVO:', nome_arquivo + extensao_arquivo)
+    print()
