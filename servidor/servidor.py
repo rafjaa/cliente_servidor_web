@@ -1,6 +1,8 @@
 import os
 import socket
 import sys
+import time
+
 from threading import Thread
 
 import magic
@@ -8,6 +10,51 @@ import magic
 
 # Caso False, escuta em localhost
 USAR_IP_EXTERNO = False
+
+HTML_LISTAGEM = '''
+    <!doctype html>
+    <html>
+        <head>
+            <meta charset="utf-8">
+            <title>{0}</title>
+            <style type="text/css">
+                *{{
+                    margin: 0;
+                    padding: 0;
+                    font-family: sans-serif;
+                }}
+            </style>
+        </head>
+        <body>
+            <h1>{0}</h1>
+            <p>
+                {2}
+            </p>
+            {1}
+        </body>
+    </html>
+'''
+
+HTML_NOT_FOUND = '''
+    <!doctype html>
+    <html>
+        <head>
+            <meta charset="utf-8">
+            <title>404 Not Found</title>
+            <style type="text/css">
+                *{{
+                    margin: 0;
+                    padding: 0;
+                    font-family: sans-serif;
+                }}
+            </style>
+        </head>
+        <body>
+            <h1>Recurso não encontrado (404 Not Found)</h1>
+            <p>Clique <a href="/">aqui</a> para acessar a listagem de arquivos da raiz</p>
+        </body>
+    </html>
+'''
 
 def obtem_ip_externo():
     try:
@@ -55,7 +102,7 @@ def processa_requisicao(con):
     print(metodo_http, recurso, versao_http)
 
     # Evita o uso de .. para voltar diretórios
-    recurso = recurso.replace('..', ' ')
+    recurso = recurso.replace('..', ' ').replace('//', '/')
 
     # 400 Bad Request
     # 500 Internal Server Error
@@ -66,7 +113,7 @@ def processa_requisicao(con):
 
 
     # Checa se o recurso existe e se é um arquivo ou diretório
-    caminho_recurso = diretorio + recurso
+    caminho_recurso = (diretorio + recurso).replace('//', '/')
     print('Analisando:', caminho_recurso)
 
     if os.path.isfile(caminho_recurso):
@@ -83,13 +130,29 @@ def processa_requisicao(con):
     elif os.path.isdir(caminho_recurso):
         print('Diretório')
 
-        conteudo_resposta = '<br>'.join(os.listdir(caminho_recurso))
+        listagem = ''
+        for i in os.listdir(caminho_recurso):
+            
+            data_modificacao = time.ctime(os.path.getmtime(caminho_recurso.rstrip('/') + '/' + i))
+            tamanho_bytes = str(os.path.getsize(caminho_recurso.rstrip('/') + '/' + i))
+
+            listagem += '<div class="item_listagem">'
+            listagem += '<a href="' + recurso.rstrip('/') + '/' + i + '">' + i + '</a>'
+            listagem += '<span>' + tamanho_bytes + '</span>'
+            listagem += '<span>' + data_modificacao + '</span>'
+            listagem += '</div>'
+
+        conteudo_resposta = HTML_LISTAGEM.format(
+            'Listagem de diretório de ' + caminho_recurso, 
+            listagem,
+            '<a href="../">..</a>' if caminho_recurso.rstrip('/') != diretorio.rstrip('/') else ''
+        )
     
     else:
         print('Não existe')
         codigo_resposta = '404'
         txt_resposta = 'Not Found'
-        conteudo_resposta = '<h1>Not Found</h1>'
+        conteudo_resposta = HTML_NOT_FOUND
 
 
     # Cabeçalho de resposta HTTP
@@ -116,9 +179,8 @@ def processa_requisicao(con):
             pass
 
     # Fecha a conexão
-    con.close()    
-    s.close()
-    
+    con.close()
+
 
 
 if __name__ == '__main__':
