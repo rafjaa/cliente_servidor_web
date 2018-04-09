@@ -1,3 +1,4 @@
+import datetime
 import os
 import socket
 import sys
@@ -11,6 +12,8 @@ import magic
 # Caso False, escuta em localhost
 USAR_IP_EXTERNO = False
 
+ARQUIVO_LOG = 'log_servidor.txt'
+
 HTML_LISTAGEM = '''
     <!doctype html>
     <html>
@@ -22,6 +25,14 @@ HTML_LISTAGEM = '''
                     margin: 0;
                     padding: 0;
                     font-family: sans-serif;
+                }}
+
+                .tam_bytes{{
+                    padding: 15px 50px;
+                }}
+
+                .mod_date{{
+                    padding: 15px 50px;
                 }}
             </style>
         </head>
@@ -90,7 +101,6 @@ def processa_requisicao(con):
 
         campos_requisicao[campo] = valor
 
-    print(campos_requisicao)
 
     try:
         metodo_http, recurso, versao_http = inicio_requisicao.split(' ')
@@ -99,7 +109,12 @@ def processa_requisicao(con):
         recurso = '/'
         versao_http = 'HTTP/1.1'
 
-    print(metodo_http, recurso, versao_http)
+    with open(ARQUIVO_LOG, 'a') as f:
+        f.write(inicio_requisicao + ';')
+        if 'User-Agent' in campos_requisicao:
+            f.write(campos_requisicao['User-Agent'])
+        f.write('\n')
+
 
     # Evita o uso de .. para voltar diretórios
     recurso = recurso.replace('..', ' ').replace('//', '/')
@@ -114,32 +129,30 @@ def processa_requisicao(con):
 
     # Checa se o recurso existe e se é um arquivo ou diretório
     caminho_recurso = (diretorio + recurso).replace('//', '/')
-    print('Analisando:', caminho_recurso)
 
     if os.path.isfile(caminho_recurso):
-        print('Arquivo')
-
         # Descobre o MIME type do arquivo
         mime = magic.Magic(mime=True)
         content_type = mime.from_file(caminho_recurso)
 
         # Lê o conteúdo do arquivo
         conteudo_resposta = open(caminho_recurso, 'rb').read()
-
     
     elif os.path.isdir(caminho_recurso):
-        print('Diretório')
-
         listagem = ''
         for i in os.listdir(caminho_recurso):
             
             data_modificacao = time.ctime(os.path.getmtime(caminho_recurso.rstrip('/') + '/' + i))
-            tamanho_bytes = str(os.path.getsize(caminho_recurso.rstrip('/') + '/' + i))
+
+            if os.path.isfile(caminho_recurso.rstrip('/') + '/' + i):
+                tamanho_bytes = str(os.path.getsize(caminho_recurso.rstrip('/') + '/' + i))
+            else:
+                tamanho_bytes = '-'
 
             listagem += '<div class="item_listagem">'
             listagem += '<a href="' + recurso.rstrip('/') + '/' + i + '">' + i + '</a>'
-            listagem += '<span>' + tamanho_bytes + '</span>'
-            listagem += '<span>' + data_modificacao + '</span>'
+            listagem += '<span class="tam_bytes">' + tamanho_bytes + '</span>'
+            listagem += '<span class="mod_date">' + data_modificacao + '</span>'
             listagem += '</div>'
 
         conteudo_resposta = HTML_LISTAGEM.format(
@@ -149,7 +162,6 @@ def processa_requisicao(con):
         )
     
     else:
-        print('Não existe')
         codigo_resposta = '404'
         txt_resposta = 'Not Found'
         conteudo_resposta = HTML_NOT_FOUND
@@ -199,9 +211,6 @@ if __name__ == '__main__':
         sys.exit()
 
 
-    print(porta, diretorio)
-
-
     while True:
         # Instancia o socket TCP IPv4
         s = socket.socket(
@@ -221,11 +230,15 @@ if __name__ == '__main__':
     
         s.listen(1)
 
-        print('Aguardando conexão em', ip_servidor, porta)
+        print('Aguardando conexão em {0}:{1}'.format(ip_servidor, porta))
 
         con, info_cliente = s.accept()
 
-        print('conexão efetuada por', info_cliente)
+        print('Conexão efetuada por', ':'.join([str(i) for i in info_cliente]), '\n')
+
+        with open(ARQUIVO_LOG, 'a') as f:
+            f.write(datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S') + ';')
+            f.write(':'.join([str(i) for i in info_cliente]) + ';')
 
         # Processa a requisição em uma thread paralela
         Thread(target=processa_requisicao, args=(con, )).start()

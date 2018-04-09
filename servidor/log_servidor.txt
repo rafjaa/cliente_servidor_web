@@ -1,0 +1,4 @@
+08/04/2018 22:41:10;127.0.0.1:53957;GET / HTTP/1.1;Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/49.0.2623.87 Safari/537.36
+08/04/2018 22:41:17;127.0.0.1:53959;GET / HTTP/1.1;Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/49.0.2623.87 Safari/537.36
+08/04/2018 22:41:28;127.0.0.1:53961;GET /teste.txt HTTP/1.1;Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/49.0.2623.87 Safari/537.36
+08/04/2018 22:41:48;127.0.0.1:53965;
